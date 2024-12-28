@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 794309186358442600}
   - component: {fileID: 6418522573060904943}
   - component: {fileID: 2142522564016860381}
+  - component: {fileID: 7893848919700673886}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -140,6 +141,8 @@ MonoBehaviour:
   speed: 5
   airWalkSpeed: 5
   jumpImpulse: 15
+  maxJumpCount: 1
+  coyoteTimeDuration: 0.2
   JumpStamina: 3
   AttackStamina: 2
   ManaForU: 20
@@ -150,12 +153,6 @@ MonoBehaviour:
   _isMoving: 0
   _isRunning: 0
   _isFacingRight: 1
-  buffMultiplier: 1.5
-  buffDuration: 5
-  buffCooldown: 10
-  rangeAttackCooldown: 5
-  buffForAllCooldown: 15
-  buffForAllDuration: 10
 --- !u!114 &4736524791708643682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -546,6 +543,32 @@ CapsuleCollider2D:
   m_Offset: {x: -0.52, y: 0.12}
   m_Size: {x: 2.04, y: 3.35}
   m_Direction: 0
+--- !u!114 &7893848919700673886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1228061427739320780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85aa08e54994e0a42bcff9d9240e1d37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buffMultiplier: 1.5
+  buffDuration: 5
+  buffCooldown: 10
+  isBuffActive: 0
+  isBuffOnCooldown: 0
+  rangeAttackCooldown: 5
+  isRangeAttackCooldown: 0
+  buffForAllCooldown: 15
+  isbuffForAllCooldown: 0
+  buffForAllDuration: 10
+  isBuffForAllActive: 0
+  rangeAttackUI: {fileID: 0}
+  buffAttackUI: {fileID: 0}
+  buffForAllUI: {fileID: 0}
 --- !u!1 &2715465065278147521
 GameObject:
   m_ObjectHideFlags: 0
@@ -731,7 +754,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70f6de859c04ddb4b962e5160bdecea8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackDam: 5
+  attackDam: 10
   attackID: 1
   knockback: {x: 1, y: 2}
 --- !u!60 &300887624476637477

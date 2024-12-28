@@ -4,7 +4,12 @@ using UnityEngine;
 
 public class CheckPoint : MonoBehaviour
 {
-	private void OnTriggerEnter2D(Collider2D collision)
+	Animator animator;
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
 	{
 		if (collision.CompareTag("Player"))
 		{
@@ -12,6 +17,8 @@ public class CheckPoint : MonoBehaviour
 			if (player != null)
 			{
 				player.SetCheckpoint(transform.position);
+				animator.SetTrigger("appear");
+
 			}
 		}
 	}

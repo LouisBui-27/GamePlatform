@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -14,7 +10,14 @@ public class PlayerController : MonoBehaviour
 	public float airWalkSpeed = 3f;
 	public float jumpImpulse = 10f;
 
-	public float JumpStamina = 3f;
+    [SerializeField]
+    private int maxJumpCount = 1; // Số lần nhảy tối đa (double jump)
+    private int jumpCount = 0;
+
+    [SerializeField] private float coyoteTimeDuration = 0.2f;
+    private float coyoteTimeCounter;
+
+    public float JumpStamina = 3f;
 	public float AttackStamina = 2f;
 
 	public float ManaForU = 20f;
@@ -22,11 +25,14 @@ public class PlayerController : MonoBehaviour
 	public float ManaForO = 40f;
 
 	TouchingDirection touchingDirection;
-	Damagable damagable;
+    Rigidbody2D rb;
+    Animator animator;
+    Damagable damagable;
 	Attack attack;
 	StaminaManage stamina;
 	ManaManage mana;
 	ExpManage exp;
+	SkillManage skill;
 
 	private Vector3 respawnPoint;
 	private Vector3 checkpoint;
@@ -131,26 +137,6 @@ public class PlayerController : MonoBehaviour
 		}
 	}
 
-	
-	Rigidbody2D rb;
-	Animator animator;
-
-
-	public float buffMultiplier = 1.5f; // Tăng 50%
-	public float buffDuration = 3f; // Thời gian hiệu lực của buff
-	public float buffCooldown = 20f; // Thời gian chờ trước khi dùng lại buff
-	private bool isBuffActive = false;
-	private bool isBuffOnCooldown = false;
-
-	public float rangeAttackCooldown = 15f;
-	private bool isRangeAttackCooldown = false;
-
-
-	public float buffForAllCooldown = 15f;
-	private bool isbuffForAllCooldown = false;
-	public float buffForAllDuration = 10f;
-	private bool isBuffForAllActive = false;
-
 	private void Awake()
 	{
 		rb = GetComponent<Rigidbody2D>();
@@ -160,6 +146,7 @@ public class PlayerController : MonoBehaviour
 		stamina = GetComponent<StaminaManage>();
 		mana = GetComponent<ManaManage>();
 		exp = GetComponent<ExpManage>();	
+		skill = GetComponent<SkillManage>();
 		respawnPoint = transform.position;
 
 		PlayerData.instance.LoadData();
@@ -174,13 +161,24 @@ public class PlayerController : MonoBehaviour
 			rb.velocity = new Vector2(moveInput.x * CurrentMoveSpeed  , rb.velocity.y );
 		animator.SetFloat(AnimationStrings.yVelocity, rb.velocity.y );
 
-		// Giảm stamina khi chạy
-		if (isRunning && IsMoving && !stamina.UseStamina(stamina.staminaCostPerSecondRunning * Time.fixedDeltaTime))
+        if (touchingDirection.IsGrounded)
+        {
+            jumpCount = 0; // Đặt lại số lần nhảy khi chạm đất
+			coyoteTimeCounter = coyoteTimeDuration;
+		}
+		else
+		{
+			coyoteTimeCounter -= Time.deltaTime;
+		}
+
+        // Giảm stamina khi chạy
+        if (isRunning && IsMoving && !stamina.UseStamina(stamina.staminaCostPerSecondRunning * Time.fixedDeltaTime))
 		{
 			isRunning = false; // Dừng chạy nếu không còn stamina
 			stamina.SetRunning(false);
 		}
-	}
+        
+    }
 	public void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
@@ -232,19 +230,21 @@ public class PlayerController : MonoBehaviour
 			stamina.SetRunning(isRunning);
         }
 	}
-	public void OnJump(InputAction.CallbackContext context)
-	{
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.performed && (jumpCount < maxJumpCount || coyoteTimeCounter > 0f ) && stamina.UseStamina(JumpStamina)) // Khi giữ phím
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpImpulse);
+            jumpCount++;
+			coyoteTimeCounter = 0;
+        }
+        else if (context.canceled) // Khi thả phím
+        {
+            rb.velocity = new Vector2(rb.velocity.x,rb.velocity.y * 0.5f);
+        }
+    }
 
-		if (context.started && touchingDirection.IsGrounded && CanMove && stamina.UseStamina(JumpStamina))
-		{
-			stamina.SetJumping(true);
-			animator.SetTrigger(AnimationStrings.jumpTrigger);
-			rb.velocity = new Vector2(rb.velocity.x, jumpImpulse);
-		}
-		stamina.SetJumping(false);
-		
-	}
-	public void OnAttack(InputAction.CallbackContext context)
+    public void OnAttack(InputAction.CallbackContext context)
 	{
 		if (context.started && stamina.UseStamina(AttackStamina))
 		{
@@ -257,85 +257,31 @@ public class PlayerController : MonoBehaviour
 	public void OnRangeAtatck(InputAction.CallbackContext context)
 	{
 
-		if (context.started  && !isRangeAttackCooldown && mana.UseMana(ManaForI))
+		if (context.started  && !skill.isRangeAttackCooldown && mana.UseMana(ManaForI))
 		{
 			animator.SetTrigger(AnimationStrings.rangeAttackTrigger);
-			StartCoroutine(ActiveRangeAttack());
+			StartCoroutine(skill.ActiveRangeAttack());
 		}
-	}
+
+    }
 	public void OnBuffAttack(InputAction.CallbackContext context)
 	{
 
-		if (context.started && !isBuffOnCooldown && mana.UseMana(ManaForU))
+		if (context.started && !skill.isBuffOnCooldown && mana.UseMana(ManaForU))
 		{
 			animator.SetTrigger(AnimationStrings.buffAttackTrigger);
-			StartCoroutine(ActivateBuff());
+			StartCoroutine(skill.ActivateBuff());
 		}
 	}
 	public void OnBuffForAll(InputAction.CallbackContext context)
 	{
-		if (context.started && !isbuffForAllCooldown && mana.UseMana(ManaForO))
+		if (context.started && !skill.isbuffForAllCooldown && mana.UseMana(ManaForO))
 		{
 			animator.SetTrigger(AnimationStrings.buffTrigger);
-			StartCoroutine(ActiveBuffForAll());
+			StartCoroutine(skill.ActiveBuffForAll());
 		}
-	}
-	private IEnumerator ActivateBuff()
-	{
-		isBuffActive = true;
-		isBuffOnCooldown = true;
-
-		// Tìm các đối tượng Attack trong các con của Player
-		Attack[] attackComponents = GetComponentsInChildren<Attack>();
-		foreach (Attack attack in attackComponents)
-		{
-			attack.attackDam *= buffMultiplier; // Tăng damage
-		}
-
-		// Chờ hết thời gian buff
-		yield return new WaitForSeconds(buffDuration);
-
-		// Khôi phục lại damage ban đầu
-		foreach (Attack attack in attackComponents)
-		{
-			attack.attackDam /= buffMultiplier;
-		}
-
-		isBuffActive = false;
-
-		// Bắt đầu thời gian hồi chiêu
-		yield return new WaitForSeconds(buffCooldown);
-		isBuffOnCooldown = false;
 	}
 	
-	private IEnumerator ActiveBuffForAll()
-	{
-		isBuffForAllActive = true;
-		isbuffForAllCooldown = true;
-		mana.manaRegenRate *= 5f;
-		stamina.staminaRegenRate *= 3f;
-		speed *= 1.5f;
-		jumpImpulse *= 1.2f;
-		damagable.Heal(30f);
-		yield return new WaitForSeconds(buffForAllDuration);
-		
-		mana.manaRegenRate /= 5f;
-		stamina.staminaRegenRate /= 3f;
-		speed /= 1.5f;
-		jumpImpulse /= 1.2f;
-
-		isBuffForAllActive = false;
-
-		yield return new WaitForSeconds(buffForAllCooldown);
-		isbuffForAllCooldown = false; 
-	}	
-	
-	private IEnumerator ActiveRangeAttack()
-	{
-		isRangeAttackCooldown = true;
-		yield return new WaitForSeconds(rangeAttackCooldown);
-		isRangeAttackCooldown = false; 
-	}
 	public void OnHit(float damage,Vector2 knockback)
 	{
 		rb.velocity = new Vector2(knockback.x,rb.velocity.y + knockback.y);

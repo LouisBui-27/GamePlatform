@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6420027429712933768}
   - component: {fileID: 410201606528326314}
   - component: {fileID: 1065263890877161599}
+  - component: {fileID: 713056286947647069}
   m_Layer: 0
   m_Name: Checkpoint
   m_TagString: CheckPoint
@@ -143,3 +144,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bb5623c11b4302429ab17ebb31ac678, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!95 &713056286947647069
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3713569377112999113}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 6b2d55d16d06b054fb4a7b867174ed4c, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
